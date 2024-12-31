@@ -2,6 +2,7 @@ const User = require('../models/userModel');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { validationResult } = require('express-validator');
+const generateToken = require('../utils/generateToken');
 
 // Response formatter utility
 const formatResponse = (success, message, data = null, error = null) => ({
@@ -38,11 +39,7 @@ const loginController = async (req, res) => {
     }
 
     // Generate JWT token
-    const token = jwt.sign(
-      { userId: user._id, role: user.role },
-      process.env.JWT_SECRET,
-      { expiresIn: '24h' }
-    );
+    const token = generateToken(user._id);
 
     // Remove password from response
     const userResponse = user.toObject();
@@ -100,11 +97,7 @@ const registerController = async (req, res) => {
     await newUser.save();
 
     // Generate JWT token
-    const token = jwt.sign(
-      { userId: newUser._id, role: newUser.role },
-      process.env.JWT_SECRET,
-      { expiresIn: '24h' }
-    );
+    const token = generateToken(newUser._id);
 
     // Remove password from response
     const userResponse = newUser.toObject();
