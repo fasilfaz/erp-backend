@@ -5,17 +5,18 @@ const generateToken = require('../utils/generateToken');
 
 const loginController = async (req, res) => {
   const { userId, password } = req.body;
+  console.log(req.body, 'req.body')
   try {
-
     // Input validation
-    if([userId, password].some(field => !field || field.trim() === '' || field.length === 0)) {
+    if ([userId, password].some(field => !field || field.trim() === '' || field.length === 0)) {
       return res.status(400).json({
         success: false,
         message: 'All fields are required'
-      })
+      });
     }
 
-    const user = await User.findOne({ userId, verified: true }).select('-password');
+    // Fetch user with password for verification
+    const user = await User.findOne({ userId, verified: true });
     if (!user) {
       return res.status(404).json({
         success: false,
@@ -35,11 +36,13 @@ const loginController = async (req, res) => {
     // Generate JWT token
     const token = generateToken(user._id);
 
+    // Omit the password field from the response
+    const { password: _, ...userWithoutPassword } = user.toObject();
 
-    res.status(201).json({
+    res.status(200).json({
       success: true,
       message: 'Login successfully',
-      data: user,
+      data: userWithoutPassword,
       token
     });
 
@@ -53,25 +56,25 @@ const loginController = async (req, res) => {
 
 const registerController = async (req, res) => {
   const { userId, password, email, name, ...otherFields } = req.body;
+
   try {
     // Input validation
-    if([userId, password, email, name].some(field => !field || field.trim() === '' || field.length === 0)) {
+    if ([userId, password, email, name].some(field => !field || field.trim() === '' || field.length === 0)) {
       return res.status(400).json({
         success: false,
-        message: 'All fields are required'
-      })
+        message: 'All fields are required',
+      });
     }
 
-
     // Check if user already exists
-    const existingUser = await User.findOne({ 
-      $or: [{ userId }, { email }] 
+    const existingUser = await User.findOne({
+      $or: [{ userId }, { email }],
     });
-    
+
     if (existingUser) {
       return res.status(409).json({
         success: false,
-        message: 'User already exists'
+        message: 'User already exists',
       });
     }
 
@@ -83,9 +86,10 @@ const registerController = async (req, res) => {
     const newUser = new User({
       userId,
       email,
+      name, // Ensure `name` is explicitly included
       password: hashedPassword,
       verified: true,
-      ...otherFields
+      ...otherFields,
     });
 
     await newUser.save();
@@ -101,13 +105,12 @@ const registerController = async (req, res) => {
       success: true,
       message: 'User registered successfully',
       data: userResponse,
-      token
+      token,
     });
-
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: error.message
+      message: error.message,
     });
   }
 };
