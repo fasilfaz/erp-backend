@@ -7,6 +7,7 @@ const { bgCyan } = require("colors");
 require("colors");
 const connectDb = require("./config/config");
 const userRouter = require("./routes/userRoutes");
+const billsRouter = require("./routes/billsRoute");
 //dotenv config
 dotenv.config();
 //db config
@@ -29,7 +30,7 @@ app.use(morgan("dev"));
 //routes
 app.use("/api/items", require("./routes/itemRoutes"));
 app.use("/api/users", userRouter);
-app.use("/api/bills", require("./routes/billsRoute"));
+app.use("/api/bills", billsRouter);
 
 //port
 const PORT = process.env.PORT || 8080;
