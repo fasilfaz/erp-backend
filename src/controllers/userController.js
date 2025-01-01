@@ -1,74 +1,67 @@
 const User = require('../models/userModel');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const { validationResult } = require('express-validator');
 const generateToken = require('../utils/generateToken');
 
-// Response formatter utility
-const formatResponse = (success, message, data = null, error = null) => ({
-  success,
-  message,
-  data,
-  error
-});
-
-/**
- * User Login Controller
- * @route POST /api/auth/login
- */
 const loginController = async (req, res) => {
+  const { userId, password } = req.body;
   try {
+
     // Input validation
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json(formatResponse(false, 'Validation error', null, errors.array()));
+    if([userId, password].some(field => !field || field.trim() === '' || field.length === 0)) {
+      return res.status(400).json({
+        success: false,
+        message: 'All fields are required'
+      })
     }
 
-    const { userId, password } = req.body;
-
-    // Find user
-    const user = await User.findOne({ userId, verified: true }).select('+password');
+    const user = await User.findOne({ userId, verified: true }).select('-password');
     if (!user) {
-      return res.status(401).json(formatResponse(false, 'Invalid credentials'));
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
     }
 
     // Verify password
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
-      return res.status(401).json(formatResponse(false, 'Invalid credentials'));
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid credentials'
+      });
     }
 
     // Generate JWT token
     const token = generateToken(user._id);
 
-    // Remove password from response
-    const userResponse = user.toObject();
-    delete userResponse.password;
 
-    res.status(200).json(formatResponse(true, 'Login successful', {
-      user: userResponse,
+    res.status(201).json({
+      success: true,
+      message: 'Login successfully',
+      data: user,
       token
-    }));
+    });
 
   } catch (error) {
-    console.error('Login error:', error);
-    res.status(500).json(formatResponse(false, 'Internal server error', null, error.message));
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
   }
 };
 
-/**
- * User Registration Controller
- * @route POST /api/auth/register
- */
 const registerController = async (req, res) => {
+  const { userId, password, email, name, ...otherFields } = req.body;
   try {
     // Input validation
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json(formatResponse(false, 'Validation error', null, errors.array()));
+    if([userId, password, email, name].some(field => !field || field.trim() === '' || field.length === 0)) {
+      return res.status(400).json({
+        success: false,
+        message: 'All fields are required'
+      })
     }
 
-    const { userId, password, email, ...otherFields } = req.body;
 
     // Check if user already exists
     const existingUser = await User.findOne({ 
@@ -76,9 +69,10 @@ const registerController = async (req, res) => {
     });
     
     if (existingUser) {
-      return res.status(409).json(
-        formatResponse(false, 'User already exists with this userId or email')
-      );
+      return res.status(409).json({
+        success: false,
+        message: 'User already exists'
+      });
     }
 
     // Hash password
@@ -90,7 +84,7 @@ const registerController = async (req, res) => {
       userId,
       email,
       password: hashedPassword,
-      verified: true, // You might want to implement email verification
+      verified: true,
       ...otherFields
     });
 
@@ -103,36 +97,35 @@ const registerController = async (req, res) => {
     const userResponse = newUser.toObject();
     delete userResponse.password;
 
-    res.status(201).json(formatResponse(true, 'User registered successfully', {
-      user: userResponse,
+    res.status(201).json({
+      success: true,
+      message: 'User registered successfully',
+      data: userResponse,
       token
-    }));
+    });
 
   } catch (error) {
-    console.error('Registration error:', error);
-    res.status(500).json(formatResponse(false, 'Internal server error', null, error.message));
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
   }
 };
 
-/**
- * Request Password Reset Controller
- * @route POST /api/auth/request-reset
- */
 const requestPasswordReset = async (req, res) => {
   try {
     const { email } = req.body;
 
     const user = await User.findOne({ email });
     if (!user) {
-      return res.status(404).json(formatResponse(false, 'User not found'));
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
     }
 
     // Generate reset token
-    const resetToken = jwt.sign(
-      { userId: user._id },
-      process.env.JWT_SECRET,
-      { expiresIn: '1h' }
-    );
+    const resetToken = generateToken(user._id);
 
     // Save reset token to user
     user.resetToken = resetToken;
@@ -141,32 +134,42 @@ const requestPasswordReset = async (req, res) => {
 
     // Here you would typically send an email with the reset link
     // For this example, we'll just return the token
-    res.status(200).json(formatResponse(true, 'Password reset token generated', { resetToken }));
+    res.status(200).json({
+      success: true,
+      message: 'Password reset link sent successfully',
+      data: resetToken
+    });
 
   } catch (error) {
-    console.error('Password reset request error:', error);
-    res.status(500).json(formatResponse(false, 'Internal server error', null, error.message));
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
   }
 };
 
-/**
- * Reset Password Controller
- * @route POST /api/auth/reset-password
- */
 const resetPassword = async (req, res) => {
   try {
     const { resetToken, newPassword } = req.body;
-
+    if (!resetToken || !newPassword) {
+      return res.status(400).json({
+        success: false,
+        message: 'All fields are required'
+      });
+    }
     // Verify reset token
     const decoded = jwt.verify(resetToken, process.env.JWT_SECRET);
     const user = await User.findOne({
       _id: decoded.userId,
-      resetToken,
+      token: resetToken,
       resetTokenExpiry: { $gt: Date.now() }
     });
 
     if (!user) {
-      return res.status(400).json(formatResponse(false, 'Invalid or expired reset token'));
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid or expired token'
+      });
     }
 
     // Hash new password
@@ -179,11 +182,16 @@ const resetPassword = async (req, res) => {
     user.resetTokenExpiry = undefined;
     await user.save();
 
-    res.status(200).json(formatResponse(true, 'Password reset successful'));
+    res.status(200).json({
+      success: true,
+      message: 'Password reset successfully'
+    });
 
   } catch (error) {
-    console.error('Password reset error:', error);
-    res.status(500).json(formatResponse(false, 'Internal server error', null, error.message));
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
   }
 };
 
