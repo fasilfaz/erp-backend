@@ -17,11 +17,7 @@ const app = express();
 
 //middlwares
 app.use(cors({
-  origin: [
-    "http://localhost:5173", 
-    "https://erp-fe-mu.vercel.app", 
-    "https://erp-fe-git-fasil-fasils-projects-11c0a246.vercel.app"
-  ],
+  origin:true,
   credentials: true,
   methods: ["GET", "HEAD", "OPTIONS", "POST", "DELETE", "PUT", "PATCH"],
   allowedHeaders: ["Content-Type", "Authorization"],
