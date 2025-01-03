@@ -32,6 +32,9 @@ app.use("/api/items", require("./routes/itemRoutes"));
 app.use("/api/users", userRouter);
 app.use("/api/bills", billsRouter);
 
+app.get("/", (req, res) => {
+  res.send("Hello");
+});
 //port
 const PORT = process.env.PORT || 8080;
 
