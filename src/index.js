@@ -17,7 +17,7 @@ const app = express();
 
 //middlwares
 app.use(cors({
-  origin: ["http://localhost:5173" , "https://erp-fe-mu.vercel.app/login"],
+  origin: ["http://localhost:5173" , "https://erp-fe-mu.vercel.app"],
   credentials: true,
   methods: ["GET", "HEAD", "OPTIONS", "POST", "DELETE", "PUT", "PATCH"],
   allowedHeaders: ['Content-Type', 'Authorization'],
