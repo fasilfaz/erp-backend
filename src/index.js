@@ -10,11 +10,6 @@ const userRouter = require("./routes/userRoutes");
 const billsRouter = require("./routes/billsRoute");
 //dotenv config
 dotenv.config();
-//db config
-connectDb();
-//rest object
-const app = express();
-
 //middlwares
 app.use(cors({
   origin:true,
@@ -22,6 +17,12 @@ app.use(cors({
   methods: ["GET", "HEAD", "OPTIONS", "POST", "DELETE", "PUT", "PATCH"],
   allowedHeaders: ["Content-Type", "Authorization"],
 }));
+//db config
+connectDb();
+//rest object
+const app = express();
+
+
 
 
 app.use(bodyParser.json());
