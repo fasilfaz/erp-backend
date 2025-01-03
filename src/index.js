@@ -14,7 +14,7 @@ const app = express();
 
 //middlwares
 app.use(cors({
-  origin:true,
+  origin: '*',
   credentials: true,
   methods: ["GET", "HEAD", "OPTIONS", "POST", "DELETE", "PUT", "PATCH"],
   allowedHeaders: ["Content-Type", "Authorization"],
