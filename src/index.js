@@ -10,6 +10,8 @@ const userRouter = require("./routes/userRoutes");
 const billsRouter = require("./routes/billsRoute");
 //dotenv config
 dotenv.config();
+const app = express();
+
 //middlwares
 app.use(cors({
   origin:true,
@@ -20,7 +22,6 @@ app.use(cors({
 //db config
 connectDb();
 //rest object
-const app = express();
 
 
 
