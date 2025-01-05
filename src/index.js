@@ -14,7 +14,7 @@ const app = express();
 
 //middlwares
 app.use(cors({
-  origin: '*',
+  origin: ["http://localhost:5000" , "https://erp-backend-swart.vercel.app"],
   credentials: true,
   methods: ["GET", "HEAD", "OPTIONS", "POST", "DELETE", "PUT", "PATCH"],
   allowedHeaders: ["Content-Type", "Authorization"],
